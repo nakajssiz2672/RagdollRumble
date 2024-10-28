@@ -1,77 +1,40 @@
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local StarterGui = game:GetService("StarterGui")
-
--- Raw URL of the Gist file containing the auto-attack and jump boost script
-local gistUrl = "https://gist.githubusercontent.com/nakajssiz2672/e802945549366260a1774acc5d04b4dc/raw/AutoAttackJumpBoost.lua"
-
--- Function to load and execute the external script
-local function loadExternalScript(url)
-    local success, result = pcall(function()
-        return HttpService:GetAsync(url)
-    end)
-
-    if success then
-        -- Load and execute the script code using loadstring
-        local func, loadError = loadstring(result)
-        if func then
-            return func -- Return the function to be executed later
-        else
-            warn("Failed to load script:", loadError)
-        end
-    else
-        warn("Error fetching script:", result)
-    end
-end
-
--- Load the external script (jump boost and auto-attack code)
-local scriptFunction = loadExternalScript(gistUrl)
-
--- Variables for cheat toggle
-local cheatEnabled = false
-
--- Function to create a toggle button
-local function createToggleButton()
-    local screenGui = Instance.new("ScreenGui", Players.LocalPlayer:WaitForChild("PlayerGui"))
-    local button = Instance.new("TextButton")
-    
-    button.Size = UDim2.new(0, 200, 0, 50)
-    button.Position = UDim2.new(0.5, -100, 0.5, -25)
-    button.Text = "Toggle Cheat (OFF)"
-    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color for OFF
-    button.Parent = screenGui
-    
-    button.MouseButton1Click:Connect(function()
-        cheatEnabled = not cheatEnabled -- Toggle the cheat state
-        button.Text = "Toggle Cheat (" .. (cheatEnabled and "ON" or "OFF") .. ")"
-        button.BackgroundColor3 = cheatEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0) -- Change color
-    end)
-    
-    return screenGui
-end
-
--- Call function to create the toggle button
-createToggleButton()
-
 -- Long-Range Auto-Attack and Jump Boost Script
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
 
--- Settings for the jump boost
-local jumpBoost = 100  -- Jump boost amount
-local boostDuration = 5  -- Boost duration in seconds
+local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
--- Settings for long-range auto-attack
-local attackRange = 50  -- Long range for detecting enemies
-local attackDamage = 10 -- Damage dealt per attack
-local attackCooldown = 1 -- Seconds between each auto-attack
-local lastAttackTime = 0 -- Track last attack time to prevent spamming
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 200, 0, 50)
+ToggleButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+ToggleButton.Text = "Toggle Cheats"
+ToggleButton.Parent = ScreenGui
+ScreenGui.Parent = player.PlayerGui
+
+local isEnabled = true
+
+-- Settings
+local jumpBoost = 100
+local boostDuration = 5
+local attackRange = 50
+local attackDamage = 10
+local attackCooldown = 1
+local lastAttackTime = 0
+
+-- Function to toggle cheat on/off
+local function toggleCheat()
+    isEnabled = not isEnabled
+    ToggleButton.Text = isEnabled and "Toggle Cheats (On)" or "Toggle Cheats (Off)"
+    print("Cheat is now " .. (isEnabled and "enabled" or "disabled"))
+end
 
 -- Function to activate jump boost
 local function activateJumpBoost()
-    if cheatEnabled then
+    if isEnabled then
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:WaitForChild("Humanoid")
         local originalJumpPower = humanoid.JumpPower
         humanoid.JumpPower = originalJumpPower + jumpBoost
         print("Jump boost activated!")
@@ -83,30 +46,44 @@ end
 
 -- Function to auto-attack nearby enemies
 local function autoAttack()
-    if not cheatEnabled then return end -- Exit if cheat is disabled
+    if isEnabled then
+        local currentTime = tick()
+        if currentTime - lastAttackTime < attackCooldown then return end
 
-    local currentTime = tick()
-    if currentTime - lastAttackTime < attackCooldown then
-        return -- Exit if the cooldown hasn't expired
-    end
+        lastAttackTime = currentTime
+        local character = player.Character or player.CharacterAdded:Wait()
+        local playerRootPart = character:FindFirstChild("HumanoidRootPart")
 
-    lastAttackTime = currentTime -- Update last attack time
-    for _, enemy in ipairs(workspace:GetChildren()) do
-        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-            local enemyHumanoid = enemy:FindFirstChild("Humanoid")
-            local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
-            local playerRootPart = character:FindFirstChild("HumanoidRootPart")
+        for _, enemy in ipairs(workspace:GetChildren()) do
+            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+                local enemyHumanoid = enemy:FindFirstChild("Humanoid")
+                local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
 
-            if enemyRootPart and playerRootPart then
-                local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
-                if distance <= attackRange then
-                    enemyHumanoid:TakeDamage(attackDamage)
-                    print("Auto-attacked an enemy for", attackDamage, "damage at long range!")
+                if enemyRootPart and playerRootPart then
+                    local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
+                    if distance <= attackRange then
+                        enemyHumanoid:TakeDamage(attackDamage)
+                        print("Auto-attacked an enemy for", attackDamage, "damage at long range!")
+                    end
                 end
             end
         end
     end
 end
+
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if isEnabled then
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- Connect toggle button
+ToggleButton.MouseButton1Click:Connect(toggleCheat)
 
 -- Connect jump boost to the Space key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -115,8 +92,16 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Run auto-attack continuously
-while true do
+-- Auto-attack loop
+RunService.RenderStepped:Connect(function()
     autoAttack()
-    wait(0.1) -- Check every 0.1 seconds
-end
+end)
+
+-- Respawn handling
+player.CharacterAdded:Connect(function()
+    if isEnabled then
+        activateJumpBoost()
+    end
+end)
+
+ScreenGui.Draggable = true -- Makes the GUI draggable
