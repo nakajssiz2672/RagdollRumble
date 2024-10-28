@@ -1,23 +1,36 @@
--- Long-Range Auto-Attack and Jump Boost Script
+-- Long-Range Auto-Attack, Jump Boost, Fly, and Sword Reach Script
 
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local replicatedStorage = game:GetService("ReplicatedStorage")
 
 -- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
+local FlyButton = Instance.new("TextButton")
+
+-- Configure Toggle Button
 ToggleButton.Size = UDim2.new(0, 200, 0, 50)
-ToggleButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+ToggleButton.Position = UDim2.new(0.5, -100, 0.5, -70)
 ToggleButton.Text = "Toggle Cheats"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 ToggleButton.Parent = ScreenGui
-ScreenGui.Parent = player.PlayerGui
+
+-- Configure Fly Button
+FlyButton.Size = UDim2.new(0, 200, 0, 50)
+FlyButton.Position = UDim2.new(0.5, -100, 0.5, 0)
+FlyButton.Text = "Toggle Fly"
+FlyButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+FlyButton.Parent = ScreenGui
+
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 local isEnabled = true
+local isFlying = false
 
 -- Settings
 local jumpBoost = 100
-local boostDuration = 5
 local attackRange = 50
 local attackDamage = 10
 local attackCooldown = 1
@@ -38,7 +51,7 @@ local function activateJumpBoost()
         local originalJumpPower = humanoid.JumpPower
         humanoid.JumpPower = originalJumpPower + jumpBoost
         print("Jump boost activated!")
-        wait(boostDuration)
+        wait(5)
         humanoid.JumpPower = originalJumpPower
         print("Jump boost ended.")
     end
@@ -71,19 +84,27 @@ local function autoAttack()
     end
 end
 
--- Infinite Jump
-UserInputService.JumpRequest:Connect(function()
-    if isEnabled then
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+-- Function to toggle flying
+local function toggleFly()
+    isFlying = not isFlying
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    if isFlying then
+        print("Flying enabled!")
+        while isFlying do
+            humanoidRootPart.Velocity = Vector3.new(0, 50, 0) -- Set upward velocity for flying
+            wait(0.1)
         end
+    else
+        print("Flying disabled!")
+        humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
     end
-end)
+end
 
 -- Connect toggle button
 ToggleButton.MouseButton1Click:Connect(toggleCheat)
+FlyButton.MouseButton1Click:Connect(toggleFly)
 
 -- Connect jump boost to the Space key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -94,7 +115,9 @@ end)
 
 -- Auto-attack loop
 RunService.RenderStepped:Connect(function()
-    autoAttack()
+    if isEnabled then
+        autoAttack()
+    end
 end)
 
 -- Respawn handling
@@ -104,4 +127,19 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-ScreenGui.Draggable = true -- Makes the GUI draggable
+-- Allow GUI to be draggable
+ScreenGui.Draggable = true
+
+-- Adjust sword reach
+local function adjustSwordReach()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local sword = character:FindFirstChild("Sword") -- Adjust to match your sword's name
+    if sword and sword:IsA("Tool") then
+        sword.Handle.Size = Vector3.new(1, 1, 5) -- Adjust the size to increase reach
+        sword.Handle.Position = sword.Handle.Position + Vector3.new(0, 0, 2) -- Adjust the position to maintain balance
+    end
+end
+
+-- Call function to adjust sword reach
+player.CharacterAdded:Connect(adjustSwordReach)
+adjustSwordReach() -- Adjust when the script is first run
