@@ -1,59 +1,59 @@
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local userInputService = game:GetService("UserInputService")
-local gui = player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
-local messageLabel = gui:WaitForChild("TextLabel")
+-- Create UI for cheat activation button and message
+local ScreenGui = Instance.new("ScreenGui")
+local CheatButton = Instance.new("TextButton")
+local MessageLabel = Instance.new("TextLabel")
+
+-- Configure the CheatButton properties
+CheatButton.Size = UDim2.new(0.3, 0, 0.1, 0)
+CheatButton.Position = UDim2.new(0.35, 0, 0.4, 0)
+CheatButton.BackgroundColor3 = Color3.new(0.1, 0.5, 0.1) -- Green background
+CheatButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+CheatButton.Font = Enum.Font.SourceSansBold
+CheatButton.TextSize = 24
+CheatButton.Text = "Activate Cheat"
+
+-- Configure the MessageLabel properties
+MessageLabel.Size = UDim2.new(0.5, 0, 0.1, 0)
+MessageLabel.Position = UDim2.new(0.25, 0, 0.55, 0)
+MessageLabel.BackgroundTransparency = 0.5
+MessageLabel.TextColor3 = Color3.new(1, 1, 1) -- White text
+MessageLabel.Font = Enum.Font.SourceSansBold
+MessageLabel.TextSize = 36
+MessageLabel.Text = "Cheat Activated!"
+MessageLabel.Visible = false -- Start hidden
+
+-- Parent the UI to the Player's PlayerGui
+CheatButton.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+MessageLabel.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- Variables
-local currentInput = ""
-local cheatCode = "IDDQD" -- Example cheat code (God mode)
-local damageMultiplier = 10 -- Set multiplier for one-hit
-local messageDuration = 2 -- Duration to show message
+local damageMultiplier = 100 -- Set multiplier for one-hit
 
 -- Function to activate cheats
 local function activateCheat()
     print("Cheat Activated: One-hit kills enabled!")
-    messageLabel.Visible = true -- Show the message
-    wait(messageDuration) -- Wait for a certain duration
-    messageLabel.Visible = false -- Hide the message after the duration
+    MessageLabel.Visible = true -- Show the message
+    wait(2) -- Wait for 2 seconds
+    MessageLabel.Visible = false -- Hide the message after the duration
 end
 
 -- Function to handle enemy hits
 local function hitEnemy(enemy)
-    local baseDamage = 100 -- Set a base damage value high enough to one-shot
-    local totalDamage = baseDamage * damageMultiplier
-
     if enemy:FindFirstChild("Humanoid") then
-        enemy.Humanoid:TakeDamage(totalDamage)
-        print("Hit enemy for " .. totalDamage .. " damage!")
+        enemy.Humanoid:TakeDamage(0) -- Instantly kill the enemy
+        print("Enemy has been one-shot!")
     end
 end
 
--- Function to capture input
-local function onInputChanged(input)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        currentInput = currentInput .. input.KeyCode.Name
+-- Connect button click to activate cheat
+CheatButton.MouseButton1Click:Connect(activateCheat)
 
-        -- Check if the current input matches the cheat code
-        if string.find(currentInput, cheatCode) then
-            activateCheat()
-            currentInput = "" -- Reset input after activation
-        end
-    end
-end
-
--- Function to check for hits
-local function onHit(target)
-    if target:IsA("Model") and target:FindFirstChild("Humanoid") then
-        hitEnemy(target)
-    end
-end
-
--- Connect input and mouse events
-userInputService.InputBegan:Connect(onInputChanged)
+-- Mouse click detection for hitting enemies
+local mouse = game.Players.LocalPlayer:GetMouse()
 mouse.Button1Down:Connect(function()
     local target = mouse.Target
-    if target then
-        onHit(target)
+    if target and target:IsA("Model") and target:FindFirstChild("Humanoid") then
+        hitEnemy(target)
     end
 end)
