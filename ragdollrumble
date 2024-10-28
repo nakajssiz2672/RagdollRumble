@@ -1,98 +1,28 @@
--- Auto-Attack, Jump Boost, Fly on Attack, and Sword Reach Script
+-- One-Shot Kill Script for Ragdoll Rumble
 
 local player = game.Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
--- GUI Setup
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("TextButton")
-local DodgeButton = Instance.new("TextButton")
-
--- Configure Toggle Button
-ToggleButton.Size = UDim2.new(0, 200, 0, 50)
-ToggleButton.Position = UDim2.new(0.5, -100, 0.5, -70)
-ToggleButton.Text = "Toggle Cheats"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
-ToggleButton.Parent = ScreenGui
-
--- Configure Dodge Button
-DodgeButton.Size = UDim2.new(0, 200, 0, 50)
-DodgeButton.Position = UDim2.new(0.5, -100, 0.5, 0)
-DodgeButton.Text = "Dodge"
-DodgeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green color
-DodgeButton.Parent = ScreenGui
-
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
-
-local isEnabled = true
-local dodgeCooldown = 1
-local lastDodgeTime = 0
-
--- Function to toggle cheat on/off
-local function toggleCheat()
-    isEnabled = not isEnabled
-    ToggleButton.Text = isEnabled and "Toggle Cheats (On)" or "Toggle Cheats (Off)"
-end
-
--- Function to dodge when attacked
-local function dodge()
-    if os.clock() - lastDodgeTime < dodgeCooldown then return end
-    lastDodgeTime = os.clock()
-
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-    -- Fly effect when dodging
-    humanoidRootPart.Velocity = Vector3.new(0, 50, 0) -- Jump up while dodging
-    wait(0.5) -- Fly for a brief moment
-    humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop flying
-end
-
--- Function to auto-attack enemies
+-- Function to auto-attack enemies for one-shot kills
 local function autoAttack()
-    if isEnabled then
-        local character = player.Character or player.CharacterAdded:Wait()
-        local playerRootPart = character:FindFirstChild("HumanoidRootPart")
-        
-        for _, enemy in ipairs(workspace:GetChildren()) do
-            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-                local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
-                if enemyRootPart and playerRootPart then
-                    local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
-                    if distance <= 50 then -- Long-range attack
-                        enemy:FindFirstChild("Humanoid"):TakeDamage(10)
-                    end
+    local character = player.Character or player.CharacterAdded:Wait()
+    local playerRootPart = character:WaitForChild("HumanoidRootPart")
+
+    for _, enemy in ipairs(workspace:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+            local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
+            if enemyRootPart and playerRootPart then
+                local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
+                if distance <= 50 then -- Adjust the range as necessary
+                    enemy:FindFirstChild("Humanoid"):TakeDamage(9999) -- One-shot damage
+                    print("One-shot enemy:", enemy.Name) -- Optional: Print to output
                 end
             end
         end
     end
 end
 
--- Function to adjust sword reach
-local function adjustSwordReach()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local sword = character:FindFirstChild("Sword") -- Change this to your sword's actual name
-    if sword and sword:IsA("Tool") then
-        sword.Handle.Size = Vector3.new(1, 1, 5) -- Increase reach
-        sword.Handle.Position = Vector3.new(0, 0, 2) -- Adjust for balance
-    end
-end
-
--- Function to reapply settings after respawn
-local function onCharacterAdded(character)
-    adjustSwordReach()
-end
-
--- Connect events
-ToggleButton.MouseButton1Click:Connect(toggleCheat)
-DodgeButton.MouseButton1Click:Connect(dodge)
-player.CharacterAdded:Connect(onCharacterAdded)
-
--- Start auto-attack loop
-RunService.RenderStepped:Connect(autoAttack)
-
--- Initial adjustments
-if player.Character then
-    onCharacterAdded(player.Character)
+-- Start the auto-attack loop
+while true do
+    autoAttack()
+    wait(1) -- Check every second
 end
