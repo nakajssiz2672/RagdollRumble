@@ -1,82 +1,67 @@
--- Long-Range Auto-Attack, Jump Boost, Fly, and Sword Reach Script
+-- Auto-Attack, Jump Boost, Fly on Attack, and Sword Reach Script
 
 local player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local replicatedStorage = game:GetService("ReplicatedStorage")
 
 -- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
-local FlyButton = Instance.new("TextButton")
+local DodgeButton = Instance.new("TextButton")
 
 -- Configure Toggle Button
 ToggleButton.Size = UDim2.new(0, 200, 0, 50)
 ToggleButton.Position = UDim2.new(0.5, -100, 0.5, -70)
 ToggleButton.Text = "Toggle Cheats"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
 ToggleButton.Parent = ScreenGui
 
--- Configure Fly Button
-FlyButton.Size = UDim2.new(0, 200, 0, 50)
-FlyButton.Position = UDim2.new(0.5, -100, 0.5, 0)
-FlyButton.Text = "Toggle Fly"
-FlyButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-FlyButton.Parent = ScreenGui
+-- Configure Dodge Button
+DodgeButton.Size = UDim2.new(0, 200, 0, 50)
+DodgeButton.Position = UDim2.new(0.5, -100, 0.5, 0)
+DodgeButton.Text = "Dodge"
+DodgeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green color
+DodgeButton.Parent = ScreenGui
 
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 local isEnabled = true
-local isFlying = false
-
--- Settings
-local jumpBoost = 100
-local attackRange = 50
-local attackDamage = 10
-local attackCooldown = 1
-local lastAttackTime = 0
+local dodgeCooldown = 1
+local lastDodgeTime = 0
 
 -- Function to toggle cheat on/off
 local function toggleCheat()
     isEnabled = not isEnabled
     ToggleButton.Text = isEnabled and "Toggle Cheats (On)" or "Toggle Cheats (Off)"
-    print("Cheat is now " .. (isEnabled and "enabled" or "disabled"))
 end
 
--- Function to activate jump boost
-local function activateJumpBoost()
-    if isEnabled then
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoid = character:WaitForChild("Humanoid")
-        local originalJumpPower = humanoid.JumpPower
-        humanoid.JumpPower = originalJumpPower + jumpBoost
-        print("Jump boost activated!")
-        wait(5)
-        humanoid.JumpPower = originalJumpPower
-        print("Jump boost ended.")
-    end
+-- Function to dodge when attacked
+local function dodge()
+    if os.clock() - lastDodgeTime < dodgeCooldown then return end
+    lastDodgeTime = os.clock()
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+    -- Fly effect when dodging
+    humanoidRootPart.Velocity = Vector3.new(0, 50, 0) -- Jump up while dodging
+    wait(0.5) -- Fly for a brief moment
+    humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Stop flying
 end
 
--- Function to auto-attack nearby enemies
+-- Function to auto-attack enemies
 local function autoAttack()
     if isEnabled then
-        local currentTime = tick()
-        if currentTime - lastAttackTime < attackCooldown then return end
-
-        lastAttackTime = currentTime
         local character = player.Character or player.CharacterAdded:Wait()
         local playerRootPart = character:FindFirstChild("HumanoidRootPart")
-
+        
         for _, enemy in ipairs(workspace:GetChildren()) do
             if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
-                local enemyHumanoid = enemy:FindFirstChild("Humanoid")
                 local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
-
                 if enemyRootPart and playerRootPart then
                     local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
-                    if distance <= attackRange then
-                        enemyHumanoid:TakeDamage(attackDamage)
-                        print("Auto-attacked an enemy for", attackDamage, "damage at long range!")
+                    if distance <= 50 then -- Long-range attack
+                        enemy:FindFirstChild("Humanoid"):TakeDamage(10)
                     end
                 end
             end
@@ -84,62 +69,30 @@ local function autoAttack()
     end
 end
 
--- Function to toggle flying
-local function toggleFly()
-    isFlying = not isFlying
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-    if isFlying then
-        print("Flying enabled!")
-        while isFlying do
-            humanoidRootPart.Velocity = Vector3.new(0, 50, 0) -- Set upward velocity for flying
-            wait(0.1)
-        end
-    else
-        print("Flying disabled!")
-        humanoidRootPart.Velocity = Vector3.new(0, 0, 0) -- Reset velocity
-    end
-end
-
--- Connect toggle button
-ToggleButton.MouseButton1Click:Connect(toggleCheat)
-FlyButton.MouseButton1Click:Connect(toggleFly)
-
--- Connect jump boost to the Space key
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Space then
-        activateJumpBoost()
-    end
-end)
-
--- Auto-attack loop
-RunService.RenderStepped:Connect(function()
-    if isEnabled then
-        autoAttack()
-    end
-end)
-
--- Respawn handling
-player.CharacterAdded:Connect(function()
-    if isEnabled then
-        activateJumpBoost()
-    end
-end)
-
--- Allow GUI to be draggable
-ScreenGui.Draggable = true
-
--- Adjust sword reach
+-- Function to adjust sword reach
 local function adjustSwordReach()
     local character = player.Character or player.CharacterAdded:Wait()
-    local sword = character:FindFirstChild("Sword") -- Adjust to match your sword's name
+    local sword = character:FindFirstChild("Sword") -- Change this to your sword's actual name
     if sword and sword:IsA("Tool") then
-        sword.Handle.Size = Vector3.new(1, 1, 5) -- Adjust the size to increase reach
-        sword.Handle.Position = sword.Handle.Position + Vector3.new(0, 0, 2) -- Adjust the position to maintain balance
+        sword.Handle.Size = Vector3.new(1, 1, 5) -- Increase reach
+        sword.Handle.Position = Vector3.new(0, 0, 2) -- Adjust for balance
     end
 end
 
--- Call function to adjust sword reach
-player.CharacterAdded:Connect(adjustSwordReach)
-adjustSwordReach() -- Adjust when the script is first run
+-- Function to reapply settings after respawn
+local function onCharacterAdded(character)
+    adjustSwordReach()
+end
+
+-- Connect events
+ToggleButton.MouseButton1Click:Connect(toggleCheat)
+DodgeButton.MouseButton1Click:Connect(dodge)
+player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Start auto-attack loop
+RunService.RenderStepped:Connect(autoAttack)
+
+-- Initial adjustments
+if player.Character then
+    onCharacterAdded(player.Character)
+end
