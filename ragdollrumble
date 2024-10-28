@@ -1,46 +1,59 @@
-using UnityEngine;
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local userInputService = game:GetService("UserInputService")
+local gui = player:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+local messageLabel = gui:WaitForChild("TextLabel")
 
-public class CheatManager : MonoBehaviour
-{
-    private string currentInput = "";
-    private string cheatCode = "IDDQD"; // Example cheat code (God mode)
-    public float damageMultiplier = 10f; // Multiplier for one-hit effect
+-- Variables
+local currentInput = ""
+local cheatCode = "IDDQD" -- Example cheat code (God mode)
+local damageMultiplier = 10 -- Set multiplier for one-hit
+local messageDuration = 2 -- Duration to show message
 
-    void Update()
-    {
-        // Capture player input
-        if (Input.anyKeyDown)
-        {
-            string keyPressed = Input.inputString.ToUpper();
-            currentInput += keyPressed;
+-- Function to activate cheats
+local function activateCheat()
+    print("Cheat Activated: One-hit kills enabled!")
+    messageLabel.Visible = true -- Show the message
+    wait(messageDuration) -- Wait for a certain duration
+    messageLabel.Visible = false -- Hide the message after the duration
+end
 
-            // Check if the input matches the cheat code
-            if (currentInput.Contains(cheatCode))
-            {
-                ActivateCheat();
-                currentInput = ""; // Reset input after cheat activation
-            }
-        }
+-- Function to handle enemy hits
+local function hitEnemy(enemy)
+    local baseDamage = 100 -- Set a base damage value high enough to one-shot
+    local totalDamage = baseDamage * damageMultiplier
 
-        // Optionally, allow backspace to remove last character
-        if (Input.GetKeyDown(KeyCode.Backspace) && currentInput.Length > 0)
-        {
-            currentInput = currentInput.Substring(0, currentInput.Length - 1);
-        }
-    }
+    if enemy:FindFirstChild("Humanoid") then
+        enemy.Humanoid:TakeDamage(totalDamage)
+        print("Hit enemy for " .. totalDamage .. " damage!")
+    end
+end
 
-    void ActivateCheat()
-    {
-        Debug.Log("Cheat Activated: Invincibility Enabled!");
-        // Implement your invincibility logic here
-    }
+-- Function to capture input
+local function onInputChanged(input)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        currentInput = currentInput .. input.KeyCode.Name
 
-    // Call this method when hitting an enemy
-    public void HitEnemy(Enemy enemy)
-    {
-        float baseDamage = 1f; // Change this to your base damage value
-        float totalDamage = baseDamage * damageMultiplier;
+        -- Check if the current input matches the cheat code
+        if string.find(currentInput, cheatCode) then
+            activateCheat()
+            currentInput = "" -- Reset input after activation
+        end
+    end
+end
 
-        enemy.TakeDamage(totalDamage);
-    }
-}
+-- Function to check for hits
+local function onHit(target)
+    if target:IsA("Model") and target:FindFirstChild("Humanoid") then
+        hitEnemy(target)
+    end
+end
+
+-- Connect input and mouse events
+userInputService.InputBegan:Connect(onInputChanged)
+mouse.Button1Down:Connect(function()
+    local target = mouse.Target
+    if target then
+        onHit(target)
+    end
+end)
