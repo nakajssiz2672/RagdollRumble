@@ -1,8 +1,46 @@
-# This code is intended for educational purposes only. Use responsibly.
-import RobloxAPI
+using UnityEngine;
 
-def one_hit_kill():
-    player = RobloxAPI.get_local_player()
-    player.set_damage_multiplier(9999)
+public class CheatManager : MonoBehaviour
+{
+    private string currentInput = "";
+    private string cheatCode = "IDDQD"; // Example cheat code (God mode)
+    public float damageMultiplier = 10f; // Multiplier for one-hit effect
 
-one_hit_kill()
+    void Update()
+    {
+        // Capture player input
+        if (Input.anyKeyDown)
+        {
+            string keyPressed = Input.inputString.ToUpper();
+            currentInput += keyPressed;
+
+            // Check if the input matches the cheat code
+            if (currentInput.Contains(cheatCode))
+            {
+                ActivateCheat();
+                currentInput = ""; // Reset input after cheat activation
+            }
+        }
+
+        // Optionally, allow backspace to remove last character
+        if (Input.GetKeyDown(KeyCode.Backspace) && currentInput.Length > 0)
+        {
+            currentInput = currentInput.Substring(0, currentInput.Length - 1);
+        }
+    }
+
+    void ActivateCheat()
+    {
+        Debug.Log("Cheat Activated: Invincibility Enabled!");
+        // Implement your invincibility logic here
+    }
+
+    // Call this method when hitting an enemy
+    public void HitEnemy(Enemy enemy)
+    {
+        float baseDamage = 1f; // Change this to your base damage value
+        float totalDamage = baseDamage * damageMultiplier;
+
+        enemy.TakeDamage(totalDamage);
+    }
+}
