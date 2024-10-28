@@ -1,1 +1,105 @@
-loadstring(game:HttpGet(('https://gitlab.com/Tsuniox/lua-stuff/-/raw/master/RagdollEngineGUI.lua'),true))()
+-- One-Shot Kill Script with GUI, Quadruple Damage, Hitbox Visualization, Notifications, and Invincibility for Ragdoll Rumble
+
+local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+local OneShotButton = Instance.new("TextButton")
+local NotificationLabel = Instance.new("TextLabel")
+
+-- Configure ScreenGui
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Configure One-Shot Kill Button
+OneShotButton.Size = UDim2.new(0, 200, 0, 50)
+OneShotButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+OneShotButton.Text = "One-Shot Kill"
+OneShotButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0) -- Green color
+OneShotButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+OneShotButton.FontSize = Enum.FontSize.Size24
+OneShotButton.Parent = ScreenGui
+
+-- Configure Notification Label
+NotificationLabel.Size = UDim2.new(0, 300, 0, 50)
+NotificationLabel.Position = UDim2.new(0.5, -150, 0.4, -25)
+NotificationLabel.Text = "Cheats are Active!"
+NotificationLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black background
+NotificationLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+NotificationLabel.FontSize = Enum.FontSize.Size24
+NotificationLabel.Parent = ScreenGui
+NotificationLabel.Visible = false -- Start as invisible
+
+-- Function to show notification
+local function showNotification()
+    NotificationLabel.Visible = true
+    wait(2) -- Show for 2 seconds
+    NotificationLabel.Visible = false
+end
+
+-- Function to make the player invincible
+local function makeInvincible()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Prevent damage from enemies
+    humanoid.HealthChanged:Connect(function(health)
+        if health < humanoid.MaxHealth then
+            humanoid.Health = humanoid.MaxHealth -- Reset health to max to prevent damage
+        end
+    end)
+end
+
+-- Function to one-shot kill enemies with quadruple damage
+local function oneShotKill()
+    local character = player.Character or player.CharacterAdded:Wait()
+    local playerRootPart = character:WaitForChild("HumanoidRootPart")
+
+    for _, enemy in ipairs(workspace:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= character then
+            local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
+            if enemyRootPart and playerRootPart then
+                local distance = (enemyRootPart.Position - playerRootPart.Position).magnitude
+                if distance <= 50 then -- Adjust the range as necessary
+                    enemy:FindFirstChild("Humanoid"):TakeDamage(9999) -- Initial damage
+                    enemy:FindFirstChild("Humanoid"):TakeDamage(9999 * 3) -- Quadruple damage
+                    print("One-shot enemy with quadruple damage:", enemy.Name) -- Optional: Print to output
+                end
+            end
+        end
+    end
+end
+
+-- Function to visualize enemy hitboxes
+local function visualizeHitboxes()
+    for _, enemy in ipairs(workspace:GetChildren()) do
+        if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") then
+            local enemyRootPart = enemy:FindFirstChild("HumanoidRootPart")
+            if enemyRootPart then
+                local hitbox = Instance.new("BoxHandleAdornment")
+                hitbox.Size = Vector3.new(2, 5, 2) -- Adjust the size for the hitbox
+                hitbox.Color3 = Color3.new(1, 0, 0) -- Red color for visibility
+                hitbox.Transparency = 0.5 -- Semi-transparent
+                hitbox.Adornee = enemyRootPart
+                hitbox.Parent = enemyRootPart
+            end
+        end
+    end
+end
+
+-- Connect button to one-shot kill function, visualize hitboxes, and make invincible
+OneShotButton.MouseButton1Click:Connect(function()
+    oneShotKill()
+    visualizeHitboxes()
+    makeInvincible() -- Activate invincibility
+    showNotification() -- Show notification when cheats are activated
+end)
+
+-- Optional: Add a visual effect when the button is clicked
+OneShotButton.MouseButton1Down:Connect(function()
+    OneShotButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Change to light green
+end)
+
+OneShotButton.MouseButton1Up:Connect(function()
+    OneShotButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0) -- Change back to original
+end)
